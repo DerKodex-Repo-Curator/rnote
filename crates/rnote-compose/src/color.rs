@@ -3,7 +3,9 @@ use palette::{
     IntoColor,
     convert::{FromColorUnclamped, IntoColorUnclamped},
 };
+use piet::IntoBrush;
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use vello_cpu::PaintType;
 
 /// The threshold of the luminance of a color, deciding if a light or dark fg color is used. Between 0.0 and 1.0.
@@ -108,6 +110,7 @@ impl Color {
         }
     }
 
+    /// From u8 rgb values, alpha value set to 1.0.
     pub const fn rgb8(r: u8, g: u8, b: u8) -> Self {
         Self {
             r: r as f64 / 256.,
@@ -117,6 +120,7 @@ impl Color {
         }
     }
 
+    /// From u8 rgba values.
     pub const fn rgba8(r: u8, g: u8, b: u8, a: u8) -> Self {
         Self {
             r: r as f64 / 256.,
@@ -126,6 +130,7 @@ impl Color {
         }
     }
 
+    /// With red value.
     pub const fn with_r(self, r: f64) -> Self {
         Self {
             r: r,
@@ -135,6 +140,7 @@ impl Color {
         }
     }
 
+    /// With green value.
     pub const fn with_g(self, g: f64) -> Self {
         Self {
             r: self.r,
@@ -144,6 +150,7 @@ impl Color {
         }
     }
 
+    /// With blue value.
     pub const fn with_b(self, b: f64) -> Self {
         Self {
             r: self.r,
@@ -153,6 +160,7 @@ impl Color {
         }
     }
 
+    /// With alpha value.
     pub const fn with_a(self, a: f64) -> Self {
         Self {
             r: self.r,
@@ -162,6 +170,7 @@ impl Color {
         }
     }
 
+    /// With u8 red value.
     pub const fn with_r8(self, r: u8) -> Self {
         Self {
             r: (r as f64) / 256.,
@@ -171,6 +180,7 @@ impl Color {
         }
     }
 
+    /// With u8 green value.
     pub const fn with_g8(self, g: u8) -> Self {
         Self {
             r: self.g,
@@ -180,6 +190,7 @@ impl Color {
         }
     }
 
+    /// With u8 blue value.
     pub const fn with_b8(self, b: u8) -> Self {
         Self {
             r: self.g,
@@ -189,6 +200,7 @@ impl Color {
         }
     }
 
+    /// With u8 alpha value.
     pub const fn with_a8(self, a: u8) -> Self {
         Self {
             r: self.g,
@@ -221,8 +233,17 @@ impl Color {
         0.2126 * self.r + 0.7152 * self.g + 0.0722 * self.b
     }
 
+    /// Convert a color value to a 32-bit rgba value.
+    pub fn into_rgba_u32(self) -> u32 {
+        let r = (self.r.clamp(0.0, 1.0) * 255.0).round() as u32;
+        let g = (self.g.clamp(0.0, 1.0) * 255.0).round() as u32;
+        let b = (self.b.clamp(0.0, 1.0) * 255.0).round() as u32;
+        let a = (self.b.clamp(0.0, 1.0) * 255.0).round() as u32;
+        (r << 24) | (g << 16) | (b << 8) | (a)
+    }
+
     /// Invert the perceived brightness of the color.
-    pub fn to_inverted_brightness_color(self) -> Self {
+    pub fn into_inverted_brightness_color(self) -> Self {
         let mut hwba_color: palette::Okhwba<f64> = self.into_color();
 
         std::mem::swap(
@@ -234,8 +255,8 @@ impl Color {
     }
 
     /// Get the original or the inverted color, depending on which one is darker.
-    pub fn to_darkest_color(self) -> Self {
-        let inverted_color = self.to_inverted_brightness_color();
+    pub fn into_darkest_color(self) -> Self {
+        let inverted_color = self.into_inverted_brightness_color();
 
         if inverted_color.luma() > self.luma() {
             self
@@ -246,7 +267,7 @@ impl Color {
 
     /// Convert to a css color attribute in the style: `rgba(xxx,xxx,xxx,xxx)`.
     /// The values are 8 bit integers, ranging [0, 255].
-    pub fn to_css_color_attr(self) -> String {
+    pub fn into_css_color_attr(self) -> String {
         format!(
             "rgba({:03},{:03},{:03},{:.3})",
             (self.r * 255.0) as i32,
@@ -267,6 +288,16 @@ impl From<piet::Color> for Color {
 impl From<Color> for piet::Color {
     fn from(color: Color) -> Self {
         piet::Color::rgba(color.r, color.g, color.b, color.a)
+    }
+}
+
+impl<P: piet::RenderContext> IntoBrush<P> for Color {
+    fn make_brush<'a>(
+        &'a self,
+        piet: &mut P,
+        _bbox: impl FnOnce() -> kurbo::Rect,
+    ) -> Cow<'a, P::Brush> {
+        Cow::Owned(piet.solid_brush(piet::Color::from(*self)))
     }
 }
 

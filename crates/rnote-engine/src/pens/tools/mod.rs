@@ -17,10 +17,10 @@ use super::pensconfig::toolsconfig::ToolStyle;
 use crate::engine::{EngineView, EngineViewMut};
 use crate::{DrawableOnDoc, WidgetFlags};
 use p2d::bounding_volume::Aabb;
-use piet::RenderContext;
 use rnote_compose::eventresult::EventResult;
 use rnote_compose::penevent::{PenEvent, PenProgress};
 use std::time::Instant;
+use vello_cpu::RenderContext;
 
 #[derive(Debug, Clone, Copy)]
 enum ToolsState {
@@ -94,13 +94,7 @@ impl DrawableOnDoc for Tools {
         }
     }
 
-    fn draw_on_doc(
-        &self,
-        cx: &mut piet_cairo::CairoRenderContext,
-        engine_view: &EngineView,
-    ) -> anyhow::Result<()> {
-        cx.save().map_err(|e| anyhow::anyhow!("{e:?}"))?;
-
+    fn draw_on_doc(&self, cx: &mut RenderContext, engine_view: &EngineView) -> anyhow::Result<()> {
         match &engine_view.config.pens_config.tools_config.style {
             ToolStyle::VerticalSpace => {
                 self.verticalspace_tool.draw_on_doc(cx, engine_view)?;
@@ -115,8 +109,6 @@ impl DrawableOnDoc for Tools {
                 self.laser_tool.draw_on_doc(cx, engine_view)?;
             }
         }
-
-        cx.restore().map_err(|e| anyhow::anyhow!("{e:?}"))?;
         Ok(())
     }
 }

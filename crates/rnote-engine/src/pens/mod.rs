@@ -29,12 +29,12 @@ use crate::engine::{EngineView, EngineViewMut};
 use crate::{DrawableOnDoc, WidgetFlags};
 use core::fmt::Display;
 use futures::channel::oneshot;
-use piet_cairo::CairoRenderContext;
 use rnote_compose::EventResult;
 use rnote_compose::PenEvent;
 use rnote_compose::penevent::PenProgress;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
+use vello_cpu::RenderContext;
 
 #[derive(Debug)]
 pub enum Pen {
@@ -165,11 +165,7 @@ impl DrawableOnDoc for Pen {
         }
     }
 
-    fn draw_on_doc(
-        &self,
-        cx: &mut CairoRenderContext,
-        engine_view: &EngineView,
-    ) -> anyhow::Result<()> {
+    fn draw_on_doc(&self, cx: &mut RenderContext, engine_view: &EngineView) -> anyhow::Result<()> {
         match self {
             Pen::Brush(brush) => brush.draw_on_doc(cx, engine_view),
             Pen::Shaper(shaper) => shaper.draw_on_doc(cx, engine_view),
